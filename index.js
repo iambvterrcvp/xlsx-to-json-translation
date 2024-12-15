@@ -1,29 +1,37 @@
 const fs = require('fs').promises
 const path = require('path')
 
-const setNestedValue = (obj, keys, value) => {
-  // console.log('keys', keys)
-  const key = keys.shift()
-  console.log('key', key)
-  if (!keys.length) {
-    obj[key] = value
-    // console.log('exit obj[key]', obj[key])
-  } else {
+const transformArray = (obj, keys, value, arrayIndexMatch) => {
+  const [_, arrayKey, index] = arrayIndexMatch
+  obj[arrayKey] = obj[arrayKey] || []
+  if (keys.length === 0) obj[arrayKey][index] = value
+  else {
+    obj[arrayKey][index] = obj[arrayKey][index] || {}
+    setNestedValue(obj[arrayKey][index], keys, value)
+  }
+}
+
+const transformObj = (obj, keys, value, key) => {
+  if (keys.length === 0) obj[key] = value
+  else {
     obj[key] = obj[key] || {}
-    // console.log('obj[key]', obj[key])
     setNestedValue(obj[key], keys, value)
   }
 }
 
-const transformObj = (obj) => {
+const setNestedValue = (obj, keys, value) => {
+  const key = keys.shift()
+  const arrayIndexMatch = key.match(/^(.+)\[(\d+)\]$/)
+  if (arrayIndexMatch) transformArray(obj, keys, value, arrayIndexMatch)
+  else transformObj(obj, keys, value, key)
+}
+
+const transformJsonObj = (obj) => {
   const result = {}
-  // console.log('obj', obj)
   for (const key in obj) {
-    // console.log('key', key)
     const keys = key.split('.')
     setNestedValue(result, keys, obj[key])
   }
-  // console.log('result', result)
   return result
 }
 
@@ -35,7 +43,7 @@ const getTranslationData = (arr) => {
       if (keyEntry === 'key') continue
       if (!translations[keyEntry]) translations[keyEntry] = {}
       translations[keyEntry][translationKey] = value[keyEntry]
-      translations[keyEntry] = transformObj(translations[keyEntry])
+      translations[keyEntry] = transformJsonObj(translations[keyEntry])
     }
   }
   return translations
@@ -61,28 +69,36 @@ const createFolder = async (name) => {
     if (folderExists) {
       // delete the folder and its contents
       await fs.rm(folderPath, { recursive: true })
-      console.log(`Existing ${name} folder deleted successfully!`)
+      console.log(`Existing ${name} deleted successfully!`)
     }
     // create the folder
     await fs.mkdir(folderPath, { recursive: true })
-    console.log(`${name} folder created successfully!`)
+    console.log(`${name} created successfully!`)
     return folderPath
   } catch (err) {
     console.error(`Error: ${err.message}`)
   }
 }
 
+const replacer = (_, value) => {
+  if (typeof value !== 'string') return value
+  return value.replace(/\\n/g, '\n').replace(/\\t/g, '\t')
+}
+
+const createFile = async (filePath, data) => {
+  try {
+    await fs.writeFile(filePath, data, 'utf8')
+    console.log(`"${filePath}" created successfully!`)
+  } catch (err) {
+    console.error(`Error creating "${filePath}": ${err.message}`)
+  }
+}
+
 const createFiles = async (folderPath, translations) => {
   for (const lang in translations) {
-    const filename = `${lang}.json`
-    try {
-      const filePath = path.join(folderPath, filename)
-      // write to the file
-      await fs.writeFile(filePath, JSON.stringify(translations[lang]), 'utf8')
-      console.log(`${filename} created successfully!`)
-    } catch (err) {
-      console.error(`Error creating ${filename}: ${err.message}`)
-    }
+    const filePath = path.join(folderPath, `${lang}.json`)
+    const data = JSON.stringify(translations[lang], replacer, 2)
+    await createFile(filePath, data)
   }
 }
 
