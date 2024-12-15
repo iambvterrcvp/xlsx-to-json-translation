@@ -185,4 +185,4 @@ const transformToJson = async (filePath) => {
 }
 
 // initialize xlsx to json transformation
-transformToJson('./test.xlsx')
+transformToJson('./translations.xlsx')
