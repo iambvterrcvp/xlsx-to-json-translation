@@ -75,43 +75,44 @@ const addValueToTarget = (target, source) => {
 }
 
 /**
- * Returns nested translation data
- * @param {*} arr
- * @returns translations
+ * Inserts  nested translation data
+ * @param {*} target
+ * @param {*} value
+ * @param {*} lang
+ * @param {*} translationKey
  */
-const getNestedTranslationData = (arr) => {
-  const translations = {}
-  // get keys based on first arr value
-  const keys = Object.keys(arr[0])
-  const translationKey = keys[0]
-  const langs = keys.slice(1)
-  // traverse arr values
-  for (const value of arr) {
-    for (const lang of langs) {
-      if (!translations[lang]) translations[lang] = {}
-      const translation = transformToObject(value[translationKey], value[lang])
-      addValueToTarget(translations[lang], translation)
-    }
-  }
-  return translations
+const insertNestedTranslation = (target, value, lang, translationKey) => {
+  const translation = transformToObject(value[translationKey], value[lang])
+  addValueToTarget(target[lang], translation)
+}
+
+/**
+ * Inserts translation data with key as it is
+ * @param {*} target
+ * @param {*} value
+ * @param {*} lang
+ * @param {*} translationKey
+ */
+const insertNonNestedTranslation = (target, value, lang, translationKey) => {
+  target[lang][value[translationKey]] = value[lang]
 }
 
 /**
  * Returns translation data
- * @param {*} arr
+ * @param {*} data
  * @returns translations
  */
-const getTranslationData = (arr) => {
+const getTranslationData = (data, insertTranslation) => {
   const translations = {}
-  // get keys based on first arr value
-  const keys = Object.keys(arr[0])
+  // get keys based on first data value
+  const keys = Object.keys(data[0])
   const translationKey = keys[0]
   const langs = keys.slice(1)
-  // traverse arr values
-  for (const value of arr) {
+  // traverse data values
+  for (const value of data) {
     for (const lang of langs) {
       if (!translations[lang]) translations[lang] = {}
-      translations[lang][value[translationKey]] = value[lang]
+      insertTranslation(translations, value, lang, translationKey)
     }
   }
   return translations
@@ -122,31 +123,16 @@ const getTranslationData = (arr) => {
  * @param {*} filePath
  * @returns sheetsObj
  */
-const getXlsxData = (file) => {
+const getXlsxData = (file, insertTranslation) => {
   const sheetsObj = {}
   const sheets = file.SheetNames
   for (let idx = 0; idx < sheets.length; idx++) {
     if (file.Workbook.Sheets[idx].Hidden) continue
-    sheetsObj[sheets[idx]] = getTranslationData(xlsxReader.utils.sheet_to_json(file.Sheets[file.SheetNames[idx]]))
+    const data = xlsxReader.utils.sheet_to_json(file.Sheets[file.SheetNames[idx]])
+    sheetsObj[sheets[idx]] = getTranslationData(data, insertTranslation)
   }
   return sheetsObj
 }
-
-/**
- * Reads xlsx data and transforms json object
- * @param {*} file
- * @returns sheetsObj
- */
-const getXlsxNestedData = (file) => {
-  const sheetsObj = {}
-  const sheets = file.SheetNames
-  for (let idx = 0; idx < sheets.length; idx++) {
-    if (file.Workbook.Sheets[idx].Hidden) continue
-    sheetsObj[sheets[idx]] = getNestedTranslationData(xlsxReader.utils.sheet_to_json(file.Sheets[file.SheetNames[idx]]))
-  }
-  return sheetsObj
-}
-
 
 /**
  * Removes all redundant backlash on newline and tab
@@ -179,7 +165,7 @@ const createFiles = async (folderPath, translations) => {
 module.exports = async (filePath, nested) => {
   const xlsxFile = xlsxReader.readFile(filePath)
   if (!file) throw Error('Cannot read xlsx file!')
-  const data = nested ? getXlsxNestedData(xlsxFile) : getXlsxData(xlsxFile)
+  const data = getXlsxData(xlsxFile, nested ? insertNestedTranslation : insertNonNestedTranslation)
   for (const key in data) {
     // create a folder for each sheets
     const folderPath = await file.createFolder(path.join('./output', key))
