@@ -1,11 +1,17 @@
 How to Use:
 
-1. Run `npm install`
-2. Make the necesary updates on `translations.xlsx` wherein:
+1. Run `npm install` to install packages
+2. Create your translation xlsx file (check `test.xlsx` file for sample) wherein:
    * sheet name = folder name
    * first row = supported translation files
    * first column = translation keys
-   NOTE: Translation key values with `.` will be treated as a nested object (example: `"a.b": "test"` will be `a: { b: "test" }`)
 
-3. Run `npm run start`
-4. Check the created folder and all its json files
+3. Run `npm run start` to initialize transformation. The following arguments can be added:
+   | arg | default | allowed value | remarks |
+   |-----|---------|---------------|---------|
+   | `nested` | `false` | `true` / `false` | If `true`, keys with `.` or `[x]` will be nested (example: `"a.b.c": "test"` = `"a": { "b": { "c": "test" } }`, `"a.list[0]": "test"` = `"a: { "list[0]": "test" }`, else keys will be added to the json file as it is.) |
+   | `filepath` | `./test.xlsx` | absolute xlsx file path | - |
+
+   Example: `npm run start -- nested=true filepath=C:/my-folder/documents/test.xlsx`
+
+4. Check the created folder and all its json files in `output` folder
