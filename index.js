@@ -1,49 +1,55 @@
 const fs = require('fs').promises
 const path = require('path')
 
-const transformArray = (obj, keys, value, arrayIndexMatch) => {
+const transformArray = (target, keys, value, arrayIndexMatch) => {
   const [_, arrayKey, index] = arrayIndexMatch
-  obj[arrayKey] = obj[arrayKey] || []
-  if (keys.length === 0) obj[arrayKey][index] = value
+  target[arrayKey] = target[arrayKey] || []
+  if (keys.length === 0) target[arrayKey][index] = value
   else {
-    obj[arrayKey][index] = obj[arrayKey][index] || {}
-    setNestedValue(obj[arrayKey][index], keys, value)
+    target[arrayKey][index] = target[arrayKey][index] || {}
+    setNestedValue(target[arrayKey][index], keys, value)
   }
 }
 
-const transformObj = (obj, keys, value, key) => {
-  if (keys.length === 0) obj[key] = value
+const transformObject = (target, keys, value, key) => {
+  if (keys.length === 0) target[key] = value
   else {
-    obj[key] = obj[key] || {}
-    setNestedValue(obj[key], keys, value)
+    target[key] = target[key] || {}
+    setNestedValue(target[key], keys, value)
   }
 }
 
-const setNestedValue = (obj, keys, value) => {
+const setNestedValue = (target, keys, value) => {
   const key = keys.shift()
   const arrayIndexMatch = key.match(/^(.+)\[(\d+)\]$/)
-  if (arrayIndexMatch) transformArray(obj, keys, value, arrayIndexMatch)
-  else transformObj(obj, keys, value, key)
+  if (arrayIndexMatch) transformArray(target, keys, value, arrayIndexMatch)
+  else transformObject(target, keys, value, key)
 }
 
-const transformJsonObj = (obj) => {
-  const result = {}
-  for (const key in obj) {
-    const keys = key.split('.')
-    setNestedValue(result, keys, obj[key])
+const transformToObject = (key, value) => {
+  const target = {}
+  const keys = key.split('.')
+  setNestedValue(target, keys, value)
+  return target
+}
+
+const addValueToTarget = (target, source) => {
+  for (const key in source) {
+    if (typeof source[key] === 'object' && source[key] !== null) {
+      if (!target[key]) target[key] = Array.isArray(source[key]) ? [] : {}
+      addValueToTarget(target[key], source[key])
+    } else target[key] = source[key]
   }
-  return result
 }
 
 const getTranslationData = (arr) => {
   const translations = {}
   for (const value of arr) {
-    const translationKey = value.key
     for (const keyEntry in value) {
       if (keyEntry === 'key') continue
       if (!translations[keyEntry]) translations[keyEntry] = {}
-      translations[keyEntry][translationKey] = value[keyEntry]
-      translations[keyEntry] = transformJsonObj(translations[keyEntry])
+      const translation = transformToObject(value.key, value[keyEntry])
+      addValueToTarget(translations[keyEntry], translation)
     }
   }
   return translations
@@ -103,15 +109,13 @@ const createFiles = async (folderPath, translations) => {
 }
 
 const transformToJson = async (filePath) => {
-  const obj = getXlsxData(filePath)
-  for (const key in obj) {
+  const data = getXlsxData(filePath)
+  for (const key in data) {
     // create a folder for each sheets
     const folderPath = await createFolder(key)
     // create files for each translations
-    if (folderPath) createFiles(folderPath, obj[key])
+    if (folderPath) createFiles(folderPath, data[key])
   }
-  console.log(obj)
-  return obj
 }
 
 // Printing data
