@@ -1,6 +1,13 @@
 const fs = require('fs').promises
 const path = require('path')
 
+/**
+ * Transforms nested array object
+ * @param {*} target
+ * @param {*} keys
+ * @param {*} value
+ * @param {*} arrayIndexMatch
+ */
 const transformArray = (target, keys, value, arrayIndexMatch) => {
   const [_, arrayKey, index] = arrayIndexMatch
   target[arrayKey] = target[arrayKey] || []
@@ -11,6 +18,13 @@ const transformArray = (target, keys, value, arrayIndexMatch) => {
   }
 }
 
+/**
+ * Transforms nested object
+ * @param {*} target
+ * @param {*} keys
+ * @param {*} value
+ * @param {*} key
+ */
 const transformObject = (target, keys, value, key) => {
   if (keys.length === 0) target[key] = value
   else {
@@ -19,6 +33,12 @@ const transformObject = (target, keys, value, key) => {
   }
 }
 
+/**
+ * Transforms nested json object (example: a.b.c or a.b.list[0])
+ * @param {*} target
+ * @param {*} keys
+ * @param {*} value
+ */
 const setNestedValue = (target, keys, value) => {
   const key = keys.shift()
   const arrayIndexMatch = key.match(/^(.+)\[(\d+)\]$/)
@@ -26,6 +46,12 @@ const setNestedValue = (target, keys, value) => {
   else transformObject(target, keys, value, key)
 }
 
+/**
+ * Transforms json object
+ * @param {*} key 
+ * @param {*} value 
+ * @returns taget
+ */
 const transformToObject = (key, value) => {
   const target = {}
   const keys = key.split('.')
@@ -33,6 +59,11 @@ const transformToObject = (key, value) => {
   return target
 }
 
+/**
+ * Adds value to target
+ * @param {*} target
+ * @param {*} source
+ */
 const addValueToTarget = (target, source) => {
   for (const key in source) {
     if (typeof source[key] === 'object' && source[key] !== null) {
@@ -42,6 +73,11 @@ const addValueToTarget = (target, source) => {
   }
 }
 
+/**
+ * Returns translation data (example: { en: { xxx }, ja: {xxx}, it: { xxx } })
+ * @param {*} arr 
+ * @returns translations
+ */
 const getTranslationData = (arr) => {
   const translations = {}
   for (const value of arr) {
@@ -55,6 +91,11 @@ const getTranslationData = (arr) => {
   return translations
 }
 
+/**
+ * Reads xlsx data and transforms json object
+ * @param {*} filePath 
+ * @returns sheetsObj
+ */
 const getXlsxData = (filePath) => {
   const reader = require('xlsx')
   const file = reader.readFile(filePath)
@@ -67,6 +108,11 @@ const getXlsxData = (filePath) => {
   return sheetsObj
 }
 
+/**
+ * Creates translation folder
+ * @param {*} name 
+ * @returns folderPath
+ */
 const createFolder = async (name) => {
   try {
     const folderPath = path.join(__dirname, name)
@@ -75,22 +121,33 @@ const createFolder = async (name) => {
     if (folderExists) {
       // delete the folder and its contents
       await fs.rm(folderPath, { recursive: true })
-      console.log(`Existing ${name} deleted successfully!`)
+      console.log(`Existing "${folderPath}" deleted successfully!`)
     }
     // create the folder
     await fs.mkdir(folderPath, { recursive: true })
-    console.log(`${name} created successfully!`)
+    console.log(`"${folderPath}" created successfully!`)
     return folderPath
   } catch (err) {
-    console.error(`Error: ${err.message}`)
+    console.error(`Error creating "${folderPath}": ${err.message}`)
   }
 }
 
+/**
+ * Removes all redundant backlash on newline and tab
+ * @param {*} _
+ * @param {*} value
+ * @returns \n or \t
+ */
 const replacer = (_, value) => {
   if (typeof value !== 'string') return value
   return value.replace(/\\n/g, '\n').replace(/\\t/g, '\t')
 }
 
+/**
+ * Creates a file with data as content
+ * @param {*} filePath
+ * @param {*} data
+ */
 const createFile = async (filePath, data) => {
   try {
     await fs.writeFile(filePath, data, 'utf8')
@@ -100,6 +157,11 @@ const createFile = async (filePath, data) => {
   }
 }
 
+/**
+ * Creates each translation files
+ * @param {*} folderPath
+ * @param {*} translations
+ */
 const createFiles = async (folderPath, translations) => {
   for (const lang in translations) {
     const filePath = path.join(folderPath, `${lang}.json`)
@@ -108,6 +170,10 @@ const createFiles = async (folderPath, translations) => {
   }
 }
 
+/**
+ * Transforms xlsx data to json files
+ * @param {*} filePath
+ */
 const transformToJson = async (filePath) => {
   const data = getXlsxData(filePath)
   for (const key in data) {
@@ -118,5 +184,5 @@ const transformToJson = async (filePath) => {
   }
 }
 
-// Printing data
+// initialize xlsx to json transformation
 transformToJson('./test.xlsx')
