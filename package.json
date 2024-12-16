@@ -1,5 +1,5 @@
 {
-  "name": "xlsx-auto-file-create",
+  "name": "xlsx-to-json-translation",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -8,8 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "iambvterrcvp",
+  "license": "MIT",
   "dependencies": {
     "xlsx": "^0.18.5"
   }
