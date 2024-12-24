@@ -9,7 +9,7 @@ How to Use:
 3. Run `npm run start` to initialize transformation. The following arguments can be added:
    | arg | default | allowed value | remarks |
    |-----|---------|---------------|---------|
-   | `nested` | `false` | `true` / `false` | If `true`, keys with `.` or `[x]` will be nested (example: `"a.b.c": "test"` = `"a": { "b": { "c": "test" } }`, `"a.list[0]": "test"` = `"a: { "list[0]": "test" }`, else keys will be added to the json file as it is.) |
+   | `nested` | `false` | `true` / `false` | If `true`, keys with `.` or `[x]` will be nested (example: `"a.b.c": "test"` = `"a": { "b": { "c": "test" } }`, `"a.list[0]": "test"` = `"a: { "list": ["test"] }`, else keys will be added to the json file as it is.) |
    | `filepath` | `./test.xlsx` | absolute xlsx file path | - |
 
    Example: `npm run start -- nested=true filepath=C:/my-folder/documents/test.xlsx`
