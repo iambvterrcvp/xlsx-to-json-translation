@@ -15,3 +15,8 @@ How to Use:
    Example: `npm run start -- nested=true filepath=C:/my-folder/documents/test.xlsx`
 
 4. Check the created folder and all its json files in `output` folder
+
+---
+
+(WIP)
+Or go to https://iambvterrcvp.github.io/xlsx-to-json-translation/
